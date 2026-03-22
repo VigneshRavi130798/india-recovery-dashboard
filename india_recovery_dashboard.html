@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>India Market Recovery Signals</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07090f; --surface: #0d1117; --surface2: #141b26;
+    --border: #1c2535; --border2: #26334a; --text: #e2e8f0;
+    --text2: #8494a8; --text3: #3d4f66;
+    --green: #22c55e; --green-dim: rgba(34,197,94,0.1); --green-border: rgba(34,197,94,0.25);
+    --amber: #f59e0b; --amber-dim: rgba(245,158,11,0.1); --amber-border: rgba(245,158,11,0.25);
+    --red: #f87171;   --red-dim: rgba(248,113,113,0.1);  --red-border: rgba(248,113,113,0.25);
+    --blue: #60a5fa;
+    --mono: ui-monospace,'SF Mono','Cascadia Code',Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); font-size:13px; line-height:1.5; min-height:100vh; }
+
+  /* Key screen */
+  #keyScreen { display:none; position:fixed; inset:0; z-index:200; background:var(--bg); align-items:center; justify-content:center; padding:24px; }
+  #keyScreen.show { display:flex; }
+  .key-card { background:var(--surface); border:1px solid var(--border2); border-radius:12px; padding:28px; max-width:440px; width:100%; }
+  .key-logo { font-size:24px; margin-bottom:14px; }
+  .key-title { font-size:16px; font-weight:600; margin-bottom:6px; }
+  .key-sub { font-size:12px; color:var(--text2); line-height:1.65; margin-bottom:20px; }
+  .key-sub a { color:var(--blue); text-decoration:none; }
+  .key-sub a:hover { text-decoration:underline; }
+  .key-label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--text3); margin-bottom:6px; }
+  .key-input { width:100%; padding:9px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:12px; outline:none; transition:border-color .15s; }
+  .key-input:focus { border-color:var(--blue); }
+  .key-input::placeholder { color:var(--text3); }
+  .key-save { width:100%; margin-top:12px; padding:10px; background:var(--blue); border:none; border-radius:6px; color:#fff; font-size:13px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+  .key-save:hover { opacity:.85; }
+  .key-save:disabled { opacity:.4; cursor:not-allowed; }
+  .key-err { font-size:11px; color:var(--red); margin-top:8px; min-height:16px; }
+  .key-note { font-size:10px; color:var(--text3); margin-top:10px; line-height:1.5; }
+
+  /* Header */
+  .hdr { display:flex; align-items:center; justify-content:space-between; padding:13px 18px; background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; gap:10px; }
+  .hdr-left { display:flex; align-items:center; gap:9px; min-width:0; overflow:hidden; }
+  .live-dot { width:7px; height:7px; border-radius:50%; background:var(--green); flex-shrink:0; animation:breathe 2.5s ease-in-out infinite; }
+  @keyframes breathe { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .hdr-title { font-size:14px; font-weight:600; letter-spacing:-.01em; white-space:nowrap; }
+  .hdr-sub { font-size:10px; color:var(--text2); font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hdr-btns { display:flex; gap:6px; flex-shrink:0; }
+  .hdr-btn { display:flex; align-items:center; gap:5px; padding:5px 12px; background:var(--surface2); border:1px solid var(--border2); color:var(--text); border-radius:5px; font-size:11px; cursor:pointer; white-space:nowrap; transition:background .15s; }
+  .hdr-btn:hover { background:var(--border); }
+  .hdr-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .hdr-btn.spinning .ri { animation:spin .8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* Score */
+  .score-bar { display:flex; align-items:center; gap:12px; padding:9px 18px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .score-label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--text3); white-space:nowrap; }
+  .score-track { flex:1; height:3px; background:var(--border2); border-radius:2px; overflow:hidden; }
+  .score-fill { height:100%; border-radius:2px; transition:width .8s cubic-bezier(.4,0,.2,1),background .4s; width:0%; background:var(--red); }
+  .score-fill.mid { background:var(--amber); }
+  .score-fill.high { background:var(--green); }
+  .score-num { font-family:var(--mono); font-size:13px; font-weight:600; min-width:40px; text-align:right; }
+  .score-pill { font-size:10px; font-weight:700; padding:3px 9px; border-radius:4px; white-space:nowrap; border:1px solid; text-transform:uppercase; letter-spacing:.05em; }
+
+  /* Main */
+  .main { padding:14px 18px 28px; }
+  .tier-row { display:flex; align-items:center; gap:10px; margin:22px 0 10px; }
+  .tier-row:first-child { margin-top:4px; }
+  .tier-badge { font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; font-family:var(--mono); color:var(--text3); background:var(--surface2); border:1px solid var(--border); padding:2px 7px; border-radius:3px; white-space:nowrap; }
+  .tier-name { font-size:11px; font-weight:500; color:var(--text2); white-space:nowrap; }
+  .tier-line { flex:1; height:1px; background:var(--border); }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  @media(max-width:460px){ .cards { grid-template-columns:1fr; } }
+
+  /* Cards */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px; border-left-width:2.5px; }
+  .card.green { border-left-color:var(--green); }
+  .card.amber { border-left-color:var(--amber); }
+  .card.red   { border-left-color:var(--red); }
+  .card.unknown { border-left-color:var(--text3); }
+  .card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .card-name { font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:.06em; color:var(--text2); line-height:1.4; }
+  .pill { font-size:9px; font-weight:700; padding:2px 6px; border-radius:3px; white-space:nowrap; flex-shrink:0; letter-spacing:.05em; text-transform:uppercase; border:1px solid; }
+  .pill.green  { background:var(--green-dim); color:var(--green); border-color:var(--green-border); }
+  .pill.amber  { background:var(--amber-dim); color:var(--amber); border-color:var(--amber-border); }
+  .pill.red    { background:var(--red-dim);   color:var(--red);   border-color:var(--red-border); }
+  .pill.unknown { background:rgba(61,79,102,.15); color:var(--text3); border-color:var(--border); }
+  .card-val  { font-family:var(--mono); font-size:18px; font-weight:600; color:var(--text); line-height:1.2; margin-bottom:4px; }
+  .card-sum  { font-size:11px; color:var(--text2); line-height:1.5; margin-bottom:5px; }
+  .card-thresh { font-size:10px; color:var(--text3); font-family:var(--mono); }
+
+  /* Skeleton */
+  .sk { background:var(--surface2); border-radius:3px; }
+  .sk.pulse { animation:sk-pulse 1.6s ease-in-out infinite; }
+  @keyframes sk-pulse { 0%,100%{opacity:.3} 50%{opacity:.65} }
+
+  /* Verdict */
+  .verdict { margin-top:20px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px 16px; }
+  .verdict-head { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--text3); margin-bottom:6px; }
+  .verdict-body { font-size:12px; color:var(--text2); line-height:1.7; }
+  .verdict-body strong { color:var(--text); font-weight:500; }
+
+  .footer { font-size:10px; color:var(--text3); font-family:var(--mono); text-align:center; padding:12px 0 4px; }
+  .err { background:var(--red-dim); border:1px solid var(--red-border); border-radius:8px; padding:12px 16px; color:var(--red); font-size:12px; margin:12px 0; line-height:1.7; }
+  .err a { color:var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Key setup screen -->
+<div id="keyScreen">
+  <div class="key-card">
+    <div class="key-logo">🔑</div>
+    <div class="key-title">Connect your Gemini API key</div>
+    <div class="key-sub">
+      This dashboard uses <strong>Google Gemini 2.0 Flash</strong> with live Google Search grounding to fetch market data and geopolitical news on every refresh.<br><br>
+      Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> — the free tier covers ~4 refreshes/day easily. The 6-hour cache means you rarely need more than 2 per day.
+    </div>
+    <div class="key-label">Your Gemini API key</div>
+    <input class="key-input" id="keyInput" type="password" placeholder="AIzaSy..." autocomplete="off" spellcheck="false" />
+    <div class="key-err" id="keyErr"></div>
+    <button class="key-save" id="keySaveBtn" onclick="saveKey()">Validate &amp; launch dashboard →</button>
+    <div class="key-note">Saved to this browser only (localStorage). Never sent anywhere except directly to generativelanguage.googleapis.com. To change key, click the ⚙ key button in the header.</div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:none">
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="live-dot" id="liveDot"></div>
+      <div style="min-width:0">
+        <div class="hdr-title">India Recovery Signals</div>
+        <div class="hdr-sub" id="hdrSub">Powered by Gemini 2.0 Flash + Google Search</div>
+      </div>
+    </div>
+    <div class="hdr-btns">
+      <button class="hdr-btn" style="color:var(--text3);font-family:var(--mono)" onclick="changeKey()">⚙ key</button>
+      <button class="hdr-btn" id="refreshBtn" onclick="doRefresh()">
+        <span class="ri" id="refreshIcon">↻</span> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="score-bar">
+    <span class="score-label">Recovery score</span>
+    <div class="score-track"><div class="score-fill" id="scoreFill"></div></div>
+    <span class="score-num" id="scoreNum" style="color:var(--text2)">— / —</span>
+    <span class="score-pill pill" id="scorePill" style="background:rgba(61,79,102,.15);color:var(--text3);border-color:var(--border)">Loading</span>
+  </div>
+
+  <div class="main">
+    <div id="tiersWrap"></div>
+    <div class="verdict" id="verdictBox" style="display:none">
+      <div class="verdict-head">Deployment signal</div>
+      <div class="verdict-body" id="verdictBody"></div>
+    </div>
+    <div class="footer" id="footer"></div>
+  </div>
+</div>
+
+<script>
+const CACHE_KEY = 'india_signals_gemini_v2';
+const KEY_STORE  = 'gemini_api_key_v1';
+const CACHE_TTL  = 6 * 60 * 60 * 1000;
+let loading = false, signals = {};
+
+/* ── Key management ── */
+const getKey = () => { try{ return localStorage.getItem(KEY_STORE)||''; }catch(e){ return ''; } };
+const setKey = k => { try{ localStorage.setItem(KEY_STORE, k); }catch(e){} };
+
+async function saveKey(){
+  const k = document.getElementById('keyInput').value.trim();
+  if(!k){ document.getElementById('keyErr').textContent='Please paste your API key.'; return; }
+  document.getElementById('keyErr').textContent='';
+  const btn = document.getElementById('keySaveBtn');
+  btn.disabled=true; btn.textContent='Validating…';
+  try{
+    const r = await callGemini('Reply with just: OK', k);
+    if(!r) throw new Error('Empty response');
+    setKey(k);
+    showApp();
+    doRefresh();
+  } catch(e){
+    document.getElementById('keyErr').textContent='Invalid key or quota exceeded. Double-check at aistudio.google.com.';
+    btn.disabled=false; btn.textContent='Validate & launch dashboard →';
+  }
+}
+
+function changeKey(){
+  document.getElementById('keyInput').value='';
+  document.getElementById('keyErr').textContent='';
+  const btn=document.getElementById('keySaveBtn');
+  btn.disabled=false; btn.textContent='Validate & launch dashboard →';
+  document.getElementById('app').style.display='none';
+  document.getElementById('keyScreen').classList.add('show');
+}
+function showApp(){
+  document.getElementById('keyScreen').classList.remove('show');
+  document.getElementById('app').style.display='block';
+}
+
+/* ── Gemini API ── */
+async function callGemini(prompt, keyOverride){
+  const key = keyOverride || getKey();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      contents:[{role:'user', parts:[{text:prompt}]}],
+      tools:[{google_search:{}}],
+      generationConfig:{ temperature:0.1, maxOutputTokens:1400 }
+    })
+  });
+  if(!res.ok){
+    const e = await res.json().catch(()=>({}));
+    throw new Error(e?.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return (data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+}
+
+function extractJSON(text){
+  try{ const c=text.replace(/```json|```/gi,'').trim(); const m=c.match(/\{[\s\S]*\}/); return m?JSON.parse(m[0]):null; }catch(e){ return null; }
+}
+
+/* ── Fetchers ── */
+async function fetchMarket(){
+  const d = new Date().toISOString().split('T')[0];
+  const t = await callGemini(
+    `Today is ${d}. Search for the latest values. Return ONLY raw JSON, no markdown:\n`+
+    `{"brent":number,"india_vix":number,"usd_inr":number,"us_10y":number,`+
+    `"gold_usd":number,"nifty50":number,"nifty50_200dma":number,`+
+    `"bank_nifty":number,"bank_nifty_chg_pct":number,"nifty50_chg_pct":number,`+
+    `"smallcap250":number,"smallcap250_chg_pct":number,`+
+    `"gold_trend":"rising"|"falling"|"flat"}\nNull for anything you cannot confirm.`
+  );
+  return extractJSON(t);
+}
+
+async function fetchQual(){
+  const d = new Date().toISOString().split('T')[0];
+  const t = await callGemini(
+    `Today is ${d}. Search Google for latest news on these. Return ONLY raw JSON, no markdown:\n`+
+    `{"hormuz_status":"open"|"partial"|"blocked","hormuz_note":"<70 chars",`+
+    `"ceasefire_status":"none"|"talks"|"ceasefire","ceasefire_note":"<70 chars",`+
+    `"fii_weekly_cr":number,"fii_positive":true|false,"fii_note":"<70 chars",`+
+    `"rbi_stance":"accommodative"|"neutral"|"hawkish","rbi_note":"<70 chars",`+
+    `"sip_cr":number,"sip_note":"<70 chars",`+
+    `"ipo_active":true|false,"ipo_note":"<70 chars",`+
+    `"crude_curve":"contango"|"backwardation"|"unknown","curve_note":"<70 chars",`+
+    `"adv_decline":"bullish"|"neutral"|"bearish","adv_decline_note":"<70 chars"}\nNull for unknown numbers.`
+  );
+  return extractJSON(t);
+}
+
+/* ── Signal processing ── */
+function process(m, q){
+  const s = {};
+  if(m){
+    const num = (v,decimals=1) => isNaN(parseFloat(v)) ? null : parseFloat(v);
+    const b=num(m.brent); if(b!=null) s.brent={ status:b<95?'green':b<110?'amber':'red', display:`$${b.toFixed(1)}`, summary:b<95?`$${b.toFixed(1)} — below $95. De-escalation priced in.`:b<110?`$${b.toFixed(1)} — elevated but below danger zone.`:`$${b.toFixed(1)} — above $110. Hormuz disruption fully priced.` };
+    const v=num(m.india_vix); if(v!=null) s.indiavix={ status:v<17?'green':v<22?'amber':'red', display:`${v.toFixed(2)}`, summary:v>22?`VIX ${v.toFixed(2)} — elevated fear. Contrarian entry zone forming.`:v>17?`VIX ${v.toFixed(2)} — moderate. Watch for peak & 5-day decline.`:`VIX ${v.toFixed(2)} — fear subsiding. Risk appetite returning.` };
+    const r=num(m.usd_inr); if(r!=null) s.usdinr={ status:r<85.5?'green':r<87?'amber':'red', display:`₹${r.toFixed(2)}`, summary:r>87?`₹${r.toFixed(2)} — under pressure, amplifying FII outflows.`:r>85.5?`₹${r.toFixed(2)} — near key level. Stabilisation needed.`:`₹${r.toFixed(2)} — stable. Favourable for FII re-entry.` };
+    const y=num(m.us_10y); if(y!=null) s.us10y={ status:y<4.2?'green':y<4.6?'amber':'red', display:`${y.toFixed(2)}%`, summary:y<4.2?`${y.toFixed(2)}% — below 4.2% EM trigger. Capital flowing back.`:y<4.6?`${y.toFixed(2)}% — elevated but manageable.`:`${y.toFixed(2)}% — high. Pulling capital away from EMs.` };
+    const g=num(m.gold_usd); if(g!=null) s.gold={ status:m.gold_trend==='falling'?'green':m.gold_trend==='rising'?'red':'amber', display:`$${Math.round(g)}/oz`, summary:m.gold_trend==='falling'?`$${Math.round(g)} & falling — safe-haven bid unwinding.`:m.gold_trend==='rising'?`$${Math.round(g)} & rising — fear trade active.`:`$${Math.round(g)} — flat. Watching for direction.` };
+    const n=num(m.nifty50), dma=num(m.nifty50_200dma);
+    const pct = (n!=null&&dma!=null)?((n-dma)/dma*100):null;
+    s.nifty200={ status:pct==null?'unknown':pct>2?'green':pct>-2?'amber':'red', display:n!=null?n.toLocaleString('en-IN'):'—', summary:pct!=null?`Nifty ${n.toLocaleString('en-IN')} — ${pct>0?'+':''}${pct.toFixed(1)}% vs 200 DMA (~${Math.round(dma).toLocaleString('en-IN')}). ${pct>2?'Above DMA — bullish.':pct>-2?'Testing DMA — critical.':'Below DMA — bearish.'}`:`Nifty ${n!=null?n.toLocaleString('en-IN'):'—'}. 200 DMA unavailable.` };
+    const bchg=num(m.bank_nifty_chg_pct), nchg=num(m.nifty50_chg_pct), bnVal=num(m.bank_nifty);
+    const diff=(bchg!=null&&nchg!=null)?bchg-nchg:null;
+    s.banknifty={ status:diff==null?'unknown':diff>1.5?'green':diff>-0.5?'amber':'red', display:bnVal!=null?bnVal.toLocaleString('en-IN'):'—', summary:diff!=null?`Bank Nifty ${bchg.toFixed(2)}% vs Nifty ${nchg.toFixed(2)}% (${diff>0?'+':''}${diff.toFixed(2)}% diff). ${diff>1.5?'Outperforming — rate cut positioning.':diff>-0.5?'Tracking market.':'Underperforming. Watch carefully.'}`:'Bank Nifty data loaded.' };
+    const sc=num(m.smallcap250_chg_pct), scVal=num(m.smallcap250);
+    s.smallcap={ status:(sc!=null&&nchg!=null)?(sc>nchg?'green':sc>nchg-1?'amber':'red'):'unknown', display:scVal!=null?scVal.toLocaleString('en-IN'):'—', summary:sc!=null?`SmallCap 250 at ${scVal.toLocaleString('en-IN')}, ${sc.toFixed(2)}% today. ${sc>nchg?'Outperforming Nifty — broad risk appetite recovering.':'Lagging large caps — breadth narrow.'}`:'SmallCap 250 data loaded.' };
+  }
+  if(q){
+    const hSt=q.hormuz_status==='open'?'green':q.hormuz_status==='partial'?'amber':q.hormuz_status==='blocked'?'red':'unknown';
+    s.hormuz={status:hSt, display:q.hormuz_status||'—', summary:q.hormuz_note||'No data.'};
+    const cSt=q.ceasefire_status==='ceasefire'?'green':q.ceasefire_status==='talks'?'amber':q.ceasefire_status==='none'?'red':'unknown';
+    s.ceasefire={status:cSt, display:q.ceasefire_status||'—', summary:q.ceasefire_note||'No data.'};
+    const fiiCr=parseFloat(q.fii_weekly_cr);
+    s.fii={status:q.fii_positive===true?'green':q.fii_positive===false?'red':'unknown', display:!isNaN(fiiCr)?`₹${fiiCr.toLocaleString('en-IN')} cr`:'—', summary:q.fii_note||'No FII data.'};
+    const rSt=q.rbi_stance==='accommodative'?'green':q.rbi_stance==='neutral'?'amber':q.rbi_stance==='hawkish'?'red':'unknown';
+    s.rbi={status:rSt, display:q.rbi_stance||'—', summary:q.rbi_note||'No RBI data.'};
+    const sipCr=parseFloat(q.sip_cr);
+    s.sip={status:!isNaN(sipCr)?(sipCr>22000?'green':sipCr>18000?'amber':'red'):'unknown', display:!isNaN(sipCr)?`₹${Math.round(sipCr).toLocaleString('en-IN')} cr`:'—', summary:q.sip_note||'No SIP data.'};
+    s.ipo={status:q.ipo_active?'green':'amber', display:q.ipo_active?'Active':'Subdued', summary:q.ipo_note||'No IPO data.'};
+    const curveSt=q.crude_curve==='contango'?'green':q.crude_curve==='backwardation'?'red':'amber';
+    s.crudecurve={status:curveSt, display:q.crude_curve||'—', summary:q.curve_note||'No curve data.'};
+    const adSt=q.adv_decline==='bullish'?'green':q.adv_decline==='bearish'?'red':'amber';
+    s.advdec={status:adSt, display:q.adv_decline||'—', summary:q.adv_decline_note||'No breadth data.'};
+  }
+  return s;
+}
+
+/* ── Tiers config ── */
+const TIERS = [
+  { label:'Tier 1', name:'Geopolitical de-escalation', signals:[
+    {id:'hormuz',    name:'Strait of Hormuz traffic',  thresh:'Watch: AIS tanker signals resuming'},
+    {id:'ceasefire', name:'Ceasefire / diplomacy',     thresh:'Watch: Oman/Qatar mediation talks'},
+    {id:'brent',     name:'Brent crude (USD/bbl)',     thresh:'Target: sustained close below $95'},
+    {id:'indiavix',  name:'India VIX',                 thresh:'Target: peak >22 then 5-day decline'},
+  ]},
+  { label:'Tier 2', name:'Macro & capital flows', signals:[
+    {id:'fii',    name:'FII net equity flows',     thresh:'Target: 3 consecutive positive weeks'},
+    {id:'usdinr', name:'USD / INR',                thresh:'Target: stable below ₹86.5'},
+    {id:'rbi',    name:'RBI policy stance',        thresh:'Watch: pivot to neutral/accommodative'},
+    {id:'us10y',  name:'US 10-year yield',         thresh:'Target: below 4.2%'},
+  ]},
+  { label:'Tier 3', name:'Domestic market internals', signals:[
+    {id:'advdec',    name:'Advance / decline ratio', thresh:'Target: A/D >2:1 on BSE 500 for 5d'},
+    {id:'smallcap',  name:'Nifty SmallCap 250',      thresh:'Watch: outperforming Nifty 50 weekly'},
+    {id:'nifty200',  name:'Nifty 50 vs 200 DMA',     thresh:'Target: close above 200 DMA on vol'},
+    {id:'banknifty', name:'Bank Nifty vs Nifty',     thresh:'Watch: Bank Nifty outperform 2%+'},
+  ]},
+  { label:'Tier 4', name:'Sentiment & soft signals', signals:[
+    {id:'gold',       name:'Gold (USD/oz)',          thresh:'Target: declining 3%+ from peak'},
+    {id:'ipo',        name:'IPO pipeline',           thresh:'Watch: 2+ mainboard DRHPs/week'},
+    {id:'sip',        name:'SIP inflows (₹ cr/mo)',  thresh:'Target: holding above ₹20,000 cr'},
+    {id:'crudecurve', name:'Crude futures curve',    thresh:'Watch: backwardation → contango flip'},
+  ]}
+];
+
+const pillLabel = s => s==='green'?'Signal ↑':s==='amber'?'Neutral':s==='red'?'Caution':'No data';
+
+function skCard(){
+  return `<div class="card unknown" style="border-left-color:var(--border2)">
+    <div class="card-head"><div class="sk pulse" style="width:100px;height:10px;margin-top:2px"></div><div class="sk pulse" style="width:46px;height:16px;border-radius:3px"></div></div>
+    <div class="sk pulse" style="width:68px;height:18px;margin-bottom:8px"></div>
+    <div class="sk pulse" style="width:100%;height:10px;margin-bottom:4px"></div>
+    <div class="sk pulse" style="width:65%;height:10px;margin-bottom:6px"></div>
+    <div class="sk pulse" style="width:80%;height:9px"></div>
+  </div>`;
+}
+
+function renderSkeletons(){
+  document.getElementById('tiersWrap').innerHTML = TIERS.map(t=>`
+    <div class="tier-row"><span class="tier-badge">${t.label}</span><span class="tier-name">${t.name}</span><div class="tier-line"></div></div>
+    <div class="cards">${t.signals.map(()=>skCard()).join('')}</div>
+  `).join('');
+}
+
+function renderDashboard(){
+  document.getElementById('tiersWrap').innerHTML = TIERS.map(t=>`
+    <div class="tier-row"><span class="tier-badge">${t.label}</span><span class="tier-name">${t.name}</span><div class="tier-line"></div></div>
+    <div class="cards">${t.signals.map(sig=>{
+      const d=signals[sig.id]||{}, st=d.status||'unknown';
+      return `<div class="card ${st}"><div class="card-head"><span class="card-name">${sig.name}</span><span class="pill ${st}">${pillLabel(st)}</span></div><div class="card-val">${d.display||'—'}</div><div class="card-sum">${d.summary||'Awaiting data…'}</div><div class="card-thresh">${sig.thresh}</div></div>`;
+    }).join('')}</div>
+  `).join('');
+
+  const all=TIERS.flatMap(t=>t.signals.map(s=>(signals[s.id]||{}).status));
+  const known=all.filter(s=>s&&s!=='unknown');
+  const greens=known.filter(s=>s==='green').length;
+  const total=known.length||16;
+  const pct=Math.round(greens/total*100);
+
+  document.getElementById('scoreNum').textContent=`${greens} / ${total}`;
+  document.getElementById('scoreNum').style.color=greens>=8?'var(--green)':greens>=4?'var(--amber)':'var(--red)';
+  const fill=document.getElementById('scoreFill');
+  fill.style.width=pct+'%';
+  fill.className='score-fill'+(pct>=60?' high':pct>=35?' mid':'');
+
+  const pill=document.getElementById('scorePill');
+  const [pText,pBg,pColor,pBorder] = greens<=3
+    ?['Hold dry powder','var(--red-dim)','var(--red)','var(--red-border)']
+    :greens<=6
+    ?['Deploy Tranche 1','var(--amber-dim)','var(--amber)','var(--amber-border)']
+    :greens<=10
+    ?['Deploy Tranche 2','var(--amber-dim)','var(--amber)','var(--amber-border)']
+    :['Deploy Tranche 3','var(--green-dim)','var(--green)','var(--green-border)'];
+  pill.textContent=pText; pill.style.background=pBg; pill.style.color=pColor; pill.style.borderColor=pBorder;
+
+  document.getElementById('verdictBox').style.display='block';
+  const vBody=document.getElementById('verdictBody');
+  vBody.innerHTML = greens<=3
+    ?`<strong>Stay cautious.</strong> Most signals red or unknown. Keep SIPs running — that's your only action. Hold withdrawn capital. Deploy only on sharp 2%+ single-day dips in quality names.`
+    :greens<=6
+    ?`<strong>Early signals turning.</strong> Deploy <strong>first tranche (25%)</strong> of available capital now. Hold 75% for FII reversal and Nifty 200 DMA reclaim confirmation.`
+    :greens<=10
+    ?`<strong>Recovery broadening.</strong> FII flows turning, VIX cooling. Deploy <strong>second tranche (50% cumulative)</strong> over 2–3 weeks. Nifty above 200 DMA on strong volume = third tranche trigger.`
+    :`<strong>Majority signals green.</strong> Institutional money positioned. Deploy <strong>third tranche — full position.</strong> 2–3 year horizon. Monitor crude & VIX for re-escalation warnings.`;
+}
+
+/* ── Refresh ── */
+async function doRefresh(){
+  if(loading) return;
+  loading=true;
+  const btn=document.getElementById('refreshBtn'), dot=document.getElementById('liveDot');
+  btn.disabled=true; btn.classList.add('spinning');
+  dot.style.background='var(--amber)'; dot.style.animation='none';
+  document.getElementById('hdrSub').textContent='Fetching via Gemini + Google Search…';
+  renderSkeletons();
+  document.getElementById('verdictBox').style.display='none';
+
+  try{
+    try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+    const [m,q] = await Promise.all([
+      fetchMarket().catch(e=>{ console.warn('market:',e); return null; }),
+      fetchQual().catch(e=>{ console.warn('qual:',e); return null; })
+    ]);
+    if(!m&&!q) throw new Error('Both Gemini calls failed. Check key & quota.');
+    signals=process(m,q);
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify({signals, ts:Date.now()})); }catch(e){}
+    renderDashboard();
+    const now=new Date();
+    document.getElementById('hdrSub').textContent=`Updated ${now.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+    document.getElementById('footer').textContent='Data via Gemini 2.0 Flash + Google Search · Cache valid 6h · Not financial advice';
+    dot.style.background='var(--green)'; dot.style.animation='breathe 2.5s ease-in-out infinite';
+  } catch(e){
+    dot.style.background='var(--red)';
+    document.getElementById('hdrSub').textContent='Error — click Refresh to retry';
+    document.getElementById('tiersWrap').innerHTML=`<div class="err"><strong>Failed to fetch data.</strong> ${e.message}<br><br>Check your API key quota at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a>.<br><br><button onclick="changeKey()" style="margin-top:4px;padding:5px 12px;background:var(--red-dim);border:1px solid var(--red-border);color:var(--red);border-radius:5px;cursor:pointer;font-size:11px;">Change API key</button></div>`;
+  } finally{
+    loading=false; btn.disabled=false; btn.classList.remove('spinning');
+  }
+}
+
+/* ── Init ── */
+function init(){
+  if(!getKey()){ document.getElementById('keyScreen').classList.add('show'); return; }
+  showApp();
+  try{
+    const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+    if(c&&c.signals&&(Date.now()-c.ts)<CACHE_TTL){
+      signals=c.signals; renderSkeletons(); renderDashboard();
+      const d=new Date(c.ts), age=Math.round((Date.now()-c.ts)/60000);
+      document.getElementById('hdrSub').textContent=`Cached · ${d.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} ${d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+      document.getElementById('footer').textContent=`Cache ${age}min old (valid 6h) · Click Refresh for latest · Not financial advice`;
+      document.getElementById('liveDot').style.background='var(--amber)';
+      return;
+    }
+  }catch(e){}
+  doRefresh();
+}
+
+document.getElementById('keyInput').addEventListener('keydown', e=>{ if(e.key==='Enter') saveKey(); });
+init();
+</script>
+</body>
+</html>
